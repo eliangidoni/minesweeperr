@@ -1,0 +1,37 @@
+version: '2'
+services:
+  base:
+    build: .
+    image: minesweeperrust
+    volumes:
+      - .:/repo  
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=minesweeper
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+  api:
+    image: minesweeperrust
+    volumes_from:
+      - base
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/minesweeper
+      - PORT=8080
+      - METRICS_PORT=8081
+    command: bash -c "cd /repo && cargo build --release && /repo/target/release/minesweeper"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+  test:
+    image: minesweeperrust
+    volumes_from:
+      - base
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/minesweeper
+      - PORT=8080
+      - METRICS_PORT=8081
+    command: bash -c "cd /repo && cargo test"
+    depends_on:
+      - db
